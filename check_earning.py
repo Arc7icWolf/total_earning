@@ -17,7 +17,7 @@ def get_logger():
 logger = get_logger()
 
 
-def fetch_history(session: requests.Session, account, symbol):
+def fetch_history(account, symbol, session: requests.Session):
     all_history = []
     limit = 1000
     offset = 0
@@ -45,26 +45,30 @@ def fetch_history(session: requests.Session, account, symbol):
     return all_results
     
 
-def check_earning(session: requests.Session, account, symbol):
-    history = fetch_history(session, account, symbol)
+def check_earning(account, symbol, session: requests.Session):
+    history = fetch_history(account, symbol, session)
 
     for h in history:
-        if h['from'] = "golem.market":
-            pass
+        if h['from'] == "golem.market" and symbol == "SWAP.HIVE": # Get SWAP.HIVE withdrawal
+            h['quantity']
+
+        if h['operation'] == "market_sell" and h['symbol'] == "SHARD": # Get SHARD sold on the market
+            h['quantityHive']
     
 
 
 
 def main():
     account = "arc7icwolf"
-    symbol = "VYB"
-    try:
-        with requests.Session() as session:
-            check_earning(session, account, symbol)
-    except (json.JSONDecodeError, KeyError) as e:
-        logger.error(f"JSON decode error or missing key: {e}")
-    # except Exception as e:
-    #    logger.error(f"An error occurred: {e}")
+    symbols = ["SWAP.HIVE", "SHARD"]
+    for symbol in symbols:
+        try:
+            with requests.Session() as session:
+                check_earning(account, symbol, session)
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"JSON decode error or missing key: {e}")
+        # except Exception as e:
+        #    logger.error(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":
