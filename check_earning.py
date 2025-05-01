@@ -17,58 +17,50 @@ def get_logger():
 logger = get_logger()
 
 
-def get_response(payload, session: requests.Session):
-    urls = ["https://api.hive-engine.com/rpc/contracts"]
-    for url in urls:
-        response = session.post(url, json=payload)
+def fetch_history(session: requests.Session, account, symbol):
+    all_history = []
+    limit = 1000
+    offset = 0
 
+    while True:
+        url = "https://history.hive-engine.com/accountHistory"
+        params = {
+            "account": account,
+            "symbol": symbol,
+            "limit": limit,
+            "offset": offset
+        }
+        response = session.get(url, params=params)
         if response.status_code != 200:
             continue
 
-        result = response.json()#.get("result", [])
-        print(result)
-        if result:
-            return result
+        data = response.json()
 
-        print(f"Error: Status Code: {response.status_code}")
+        if not data:
+            break # all history fetched
 
+        all_results.extend(data)
+        offset += limit
+        
+    return all_results
+    
 
-def create_payload(receiver, symbol, session: requests.Session):
-    payload = {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "find",
-        "params": {
-            "contract": "tokens",
-            "table": "transfer",
-            "query": {
-                "from": receiver
-            },
-            "limit": 100,
-            "offset": 0,
-            "indexes": []
-        }
-    }
+def check_earning(session: requests.Session, account, symbol):
+    history = fetch_history(session, account, symbol)
 
-    result = get_response(payload, session)
-    return result
+    for h in history:
+        if h['from'] = "golem.market":
+            pass
+    
 
-
-def check_earning(receiver, symbol, session: requests.Session):
-    result = create_payload(receiver, symbol, session)
-    print(len(result))
-    for r in result:
-        print(r)
-        break
 
 
 def main():
-    sender = "golem.overlord"
-    receiver = "arc7icwolf"
-    symbol = "SWAP.HIVE"
+    account = "arc7icwolf"
+    symbol = "VYB"
     try:
         with requests.Session() as session:
-            check_earning(receiver, symbol, session)
+            check_earning(session, account, symbol)
     except (json.JSONDecodeError, KeyError) as e:
         logger.error(f"JSON decode error or missing key: {e}")
     # except Exception as e:
