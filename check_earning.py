@@ -39,28 +39,33 @@ def fetch_history(account, symbol, session: requests.Session):
         if not data:
             break # all history fetched
 
-        all_results.extend(data)
+        all_history.extend(data)
         offset += limit
         
-    return all_results
+    return all_history
     
 
 def check_earning(account, symbol, session: requests.Session):
+    total_hive = 0
+    
     history = fetch_history(account, symbol, session)
 
     for h in history:
-        if h['from'] == "golem.market" and symbol == "SWAP.HIVE": # Get SWAP.HIVE withdrawal
-            h['quantity']
+        if h.get('from', []) == "golem.market" and symbol == "SWAP.HIVE": # Get SWAP.HIVE withdrawal
+            total_hive += float(h['quantity'])
 
-        if h['operation'] == "market_sell" and h['symbol'] == "SHARD": # Get SHARD sold on the market
-            h['quantityHive']
+        if h.get('operation', []) == "market_sell":
+            if h.get('symbol', []) == "ANIMA" or h.get('symbol', []) == "SHARD": # Get ANIMA and SHARD sold on the market
+                total_hive += float(h['quantityHive'])
+
+    print(round(total_hive, 2), symbol)
     
 
 
 
 def main():
     account = "arc7icwolf"
-    symbols = ["SWAP.HIVE", "SHARD"]
+    symbols = ["SWAP.HIVE", "SHARD", "ANIMA"]
     for symbol in symbols:
         try:
             with requests.Session() as session:
