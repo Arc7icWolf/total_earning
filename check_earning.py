@@ -67,6 +67,7 @@ def get_response(data, session: requests.Session):
 
 def check_earning(account, symbol, session: requests.Session):
     total_hive = 0
+    shard_swapped = 0
     
     history = fetch_history(account, symbol, session)
 
@@ -94,8 +95,10 @@ def check_earning(account, symbol, session: requests.Session):
 
             if trx_details_decoded['contractPayload']['tokenSymbol'] == "SHARD":
                 total_hive += float(h['quantity'])
+                shard_swapped += float(trx_details_decoded['contractPayload']['tokenAmount'])
 
     print(round(total_hive, 2), "SWAP.HIVE")
+    print(round(shard_swapped, 2), "SHARD")
 
 
 def main():
