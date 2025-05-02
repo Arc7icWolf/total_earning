@@ -1,6 +1,7 @@
 import requests
 import json
 import logging
+import sys
 
 
 # logger
@@ -45,6 +46,25 @@ def fetch_history(account, symbol, session: requests.Session):
     return all_history
     
 
+# Send request, get response, return decoded JSON response
+def get_response(data, session: requests.Session):
+    urls = [
+        "https://api.deathwing.me",
+        "https://api.hive.blog",
+        "https://hive-api.arcange.eu",
+        "https://api.openhive.network"
+    ]
+    for url in urls:
+        request = requests.Request("POST", url=url, data=data).prepare()
+        response_json = session.send(request, allow_redirects=False)
+        if response_json.status_code == 502:
+            continue
+        response = response_json.json().get("result", [])
+        if len(response) == 0:
+            logger.warning(f"{response_json.json()} from this {data}")
+        return response
+
+
 def check_earning(account, symbol, session: requests.Session):
     total_hive = 0
     
@@ -58,9 +78,24 @@ def check_earning(account, symbol, session: requests.Session):
             if h.get('symbol', []) == "ANIMA" or h.get('symbol', []) == "SHARD": # Get ANIMA and SHARD sold on the market
                 total_hive += float(h['quantityHive'])
 
-    print(round(total_hive, 2), symbol)
-    
+        if h.get('operation') == "marketpools_swapTokens" and symbol == "SWAP.HIVE":
+            trx_id = h['transactionId']
+            data = (
+                f'{{"jsonrpc":"2.0", "method":"condenser_api.get_transaction", '
+                f'"params":["{trx_id}"], "id":1}}'
+            )
+            raw_trx_details = get_response(data, session)
+            trx_details_encoded = raw_trx_details['operations'][0][1]['json']
+            try:
+                trx_details_decoded = json.loads(trx_details_encoded)
+            except json.JSONDecodeError as e:
+                print("Decoding error", e)
+                return
 
+            if trx_details_decoded['contractPayload']['tokenSymbol'] == "SHARD":
+                total_hive += float(h['quantity'])
+
+    print(round(total_hive, 2), "SWAP.HIVE")
 
 
 def main():
