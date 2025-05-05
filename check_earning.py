@@ -20,10 +20,11 @@ logger = get_logger()
 
 def fetch_history(account, symbol, session: requests.Session):
     all_history = []
-    limit = 1000
+    limit = 200
     offset = 0
 
     while True:
+        
         url = "https://history.hive-engine.com/accountHistory"
         params = {
             "account": account,
@@ -67,18 +68,21 @@ def get_response(data, session: requests.Session):
 
 def check_earning(account, symbol, session: requests.Session):
     total_hive = 0
-    shard_swapped = 0
     
     history = fetch_history(account, symbol, session)
-
+    
     for h in history:
-        if h.get('from', []) == "golem.market" and symbol == "SWAP.HIVE": # Get SWAP.HIVE withdrawal
+        if h.get('memo', "") is not None:
+            if "Market sale of" in h.get('memo', ""): # market sales
+                total_hive += float(h['quantity'])
+        	
+        if h.get('from', []) in ["golem.market", "golem.overlord"] and symbol == "SWAP.HIVE": # SWAP.HIVE withdrawals and old sales
             total_hive += float(h['quantity'])
-
+            
         if h.get('operation', []) == "market_sell":
-            if h.get('symbol', []) == "ANIMA" or h.get('symbol', []) == "SHARD": # Get ANIMA and SHARD sold on the market
+            if h.get('symbol', []) == "ANIMA" or h.get('symbol', []) == "SHARD": # ANIMA and SHARD sold on the market
                 total_hive += float(h['quantityHive'])
-
+                
         if h.get('operation') == "marketpools_swapTokens" and symbol == "SWAP.HIVE":
             trx_id = h['transactionId']
             data = (
@@ -92,27 +96,31 @@ def check_earning(account, symbol, session: requests.Session):
             except json.JSONDecodeError as e:
                 print("Decoding error", e)
                 return
-
-            if trx_details_decoded['contractPayload']['tokenSymbol'] == "SHARD":
+            
+            if trx_details_decoded['contractPayload']['tokenSymbol'] == "SHARD": # SHARD to SWAP.HIVE swaps
                 total_hive += float(h['quantity'])
-                shard_swapped += float(trx_details_decoded['contractPayload']['tokenAmount'])
-
-    print(round(total_hive, 2), "SWAP.HIVE")
-    print(round(shard_swapped, 2), "SHARD")
+                
+    print(round(total_hive, 2), "SWAP.HIVE from", symbol)
+    return total_hive
 
 
 def main():
     account = "arc7icwolf"
+    total = 0
     symbols = ["SWAP.HIVE", "SHARD", "ANIMA"]
     for symbol in symbols:
         try:
             with requests.Session() as session:
-                check_earning(account, symbol, session)
+                token = check_earning(account, symbol, session)
+                total += token
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"JSON decode error or missing key: {e}")
         # except Exception as e:
         #    logger.error(f"An error occurred: {e}")
+        
+    print(total, "SWAP.HIVE in total")
 
 
 if __name__ == "__main__":
     main()
+    
