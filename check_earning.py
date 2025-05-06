@@ -91,7 +91,7 @@ def check_earning(account, symbol, session: requests.Session):
                 total_hive += float(h['quantity'])
                 market_sales += float(h['quantity'])
 
-            if h.get('to', []) in ["golem.market", "golem.overlord"]: # SWAP.HIVE withdrawals and old sales
+            if h.get('to', []) in ["golem.market", "golem.overlord"]: # SWAP.HIVE deposits and golemancer's staff
                 total_hive -= float(h['quantity'])
                 market_sales -= float(h['quantity'])
                     
