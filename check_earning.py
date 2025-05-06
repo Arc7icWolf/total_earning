@@ -90,6 +90,10 @@ def check_earning(account, symbol, session: requests.Session):
             if h.get('from', []) in ["golem.market", "golem.overlord"]: # SWAP.HIVE withdrawals and old sales
                 total_hive += float(h['quantity'])
                 market_sales += float(h['quantity'])
+
+            if h.get('to', []) in ["golem.market", "golem.overlord"]: # SWAP.HIVE withdrawals and old sales
+                total_hive -= float(h['quantity'])
+                market_sales -= float(h['quantity'])
                     
             if h.get('operation') == "marketpools_swapTokens": # swaps to SWAP.HIVE
                 trx_id = h['transactionId']
